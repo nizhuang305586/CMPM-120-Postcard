@@ -9,9 +9,8 @@ let config = {
     width: 960,
     height: 540,
     backgroundColor: '#0b1020',
-    zoom: 2,
+    zoom: 1,
     scale: {
-        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
     physics: {
@@ -21,7 +20,7 @@ let config = {
         }
     },
 
-    scene: [ Load, Menu, Play ]
+    scene: [ Play ]
 }
 
-let game = new Phaser.Game(config)
+const game = new Phaser.Game(config)
