@@ -1,8 +1,8 @@
-class Player extends Phaser.Physics.Sprite {
-    constructor(x, y, texture, frame) {
+class Player extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y, texture, frame) {
         super(scene, x, y, texture, frame)
-        scene.add.existing(true)
-        scene.physics.add.existing(true)
+        scene.add.existing(this)
+        scene.physics.add.existing(this)
 
         this.moveSpeed = 150
 
@@ -10,7 +10,7 @@ class Player extends Phaser.Physics.Sprite {
             idle: new IdleState(),
             walk: new WalkState(),
             interact: new InteractState()
-        })
+        }, [scene, this])
 
         
     }
@@ -20,13 +20,14 @@ class Player extends Phaser.Physics.Sprite {
 class IdleState extends State {
     enter(scene, player) {
         player.setVelocity(0,0)
+        console.log('IdleState')
 
     }
 
     execute(scene, player) {
         const InteractKey = scene.keys.EKey
         const LeftKey = scene.keys.AKey
-        const RightKey = scene.keys.Dkey
+        const RightKey = scene.keys.DKey
 
         if (Phaser.Input.Keyboard.JustDown(InteractKey)) {
             this.stateMachine.transition('interact')
@@ -43,16 +44,27 @@ class IdleState extends State {
 }
 
 class WalkState extends State {
-    enter(scene, player) {
-        player.setVelocityX(player.moveSpeed)
-    }
-
     execute(scene, player) {
         const LeftKey = scene.keys.AKey
         const RightKey = scene.keys.DKey
+        const InteractKey = scene.keys.EKey
 
-        if (!Phaser.Input.Keyboard.isDown(LeftKey) || !Phaser.Input.Keyboard.isDown(RightKey)) {
-            
+        if (LeftKey.isDown) {
+            player.setVelocityX(-player.moveSpeed)
+            console.log('isDown')
+        } else if (RightKey.isDown) {
+            player.setVelocityX(player.moveSpeed)
+            console.log('isDown')
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(InteractKey)) {
+            this.stateMachine.transition('interact')
+            return
+        }
+
+        if (!LeftKey.isDown && !RightKey.isDown) {
+            this.stateMachine.transition('idle')
+            return
         }
     }
 }
@@ -63,6 +75,15 @@ class InteractState extends State {
     }
 
     execute(scene, play) {
+        const leftKey = scene.keys.AKey
+        const rightKey = scene.keys.Dkey
+
+        if (leftKey.isDown || rightKey.isDown) {
+            this.stateMachine.transition('walk')
+            return
+        }
+
+        this.stateMachine.transition('idle')
 
     }
 }
