@@ -4,7 +4,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         scene.add.existing(this)
         scene.physics.add.existing(this)
 
-        this.moveSpeed = 150
+        this.moveSpeed = 65
 
         scene.playerFSM = new StateMachine('idle', {
             idle: new IdleState(),
@@ -72,11 +72,19 @@ class WalkState extends State {
 class InteractState extends State {
     enter(scene, player) {
         player.setVelocity(0, 0)
+
+        for (const interactable of scene.interactables) {
+            if (interactable.tryInteract(player)) {
+                return
+            }
+        }
+
+        this.stateMachine.transition('idle')
     }
 
     execute(scene, play) {
         const leftKey = scene.keys.AKey
-        const rightKey = scene.keys.Dkey
+        const rightKey = scene.keys.DKey
 
         if (leftKey.isDown || rightKey.isDown) {
             this.stateMachine.transition('walk')

@@ -6,32 +6,98 @@ class Play extends Phaser.Scene {
     create() {
         const { width, height } = this.scale
 
-        // Create background as part of the world
-        this.bg = this.add.image(0, 0, 'cityBackground')
+        this.interactables = []
+
+        // smaller box pushed higher
+        this.dialogueBox = this.add.rectangle(480, 340, 360, 52, 0x000000, 0.85)
+            .setVisible(false)
+            .setScrollFactor(0)
+            .setDepth(100)
+
+        // main dialogue text
+        this.dialogueText = this.add.text(310, 322, '', {
+            fontSize: '11px',
+            color: '#ffffff',
+            wordWrap: { width: 320 }
+        })
+        .setVisible(false)
+        .setScrollFactor(0)
+        .setDepth(101)
+
+        // response option
+        this.responseText = this.add.text(310, 342, '', {
+            fontSize: '11px',
+            color: '#ffff66'
+        })
+        .setVisible(false)
+        .setScrollFactor(0)
+        .setDepth(101)
+
+        this.openDialogue = (message, response) => {
+            this.dialogueBox.setVisible(true)
+            this.dialogueText.setText(message).setVisible(true)
+            this.responseText.setText('[1] ' + response).setVisible(true)
+
+            this.input.keyboard.once('keydown-ONE', () => {
+                this.dialogueText.setText(response)
+                this.responseText.setVisible(false)
+
+                this.time.delayedCall(1200, () => {
+                    this.dialogueBox.setVisible(false)
+                    this.dialogueText.setVisible(false)
+                })
+            })
+        }
+
+        const boothHeight = 80
+
+        const phoneBooth = new Interact(this, 430, 600, {
+            width: 40,
+            height: 80,
+            color: 0xff0000,
+            readius: 60,
+            onInteract: () => {
+                this.openDialogue(
+                    'Hello? When are you coming back home?',
+                    "I'm currently on my way."
+                )
+            }
+        })
+
+        this.interactables.push(phoneBooth)
+
+        // FAR background
+        this.bgFar = this.add.image(0, 0, 'cityBackground')
+            .setOrigin(0, 0)
+            .setDepth(-20)
+
+        // FRONT city layer
+        this.bgFront = this.add.image(0, 0, 'cityLayer')
             .setOrigin(0, 0)
             .setDepth(-10)
 
-        // IMPORTANT:
-        // Scale by COVER, not stretch.
-        // This preserves aspect ratio and guarantees no grey space in the camera.
-        const scaleX = width / this.bg.width
-        const scaleY = height / this.bg.height
+        this.bgMusic = this.sound.add('bgMusic', { loop: true })
+        this.bgMusic.play()
+
+        // Scale both backgrounds without stretching
+        const scaleX = width / this.bgFar.width
+        const scaleY = height / this.bgFar.height
         const scale = Math.max(scaleX, scaleY)
 
-        this.bg.setScale(scale)
+        this.bgFar.setScale(scale)
+        this.bgFront.setScale(scale)
 
-        // Use DISPLAY size after scaling
-        const mapWidth = this.bg.displayWidth
-        const mapHeight = this.bg.displayHeight
+        const mapWidth = this.bgFront.displayWidth
+        const mapHeight = this.bgFront.displayHeight
 
-        // World + camera bounds must match the scaled background
         this.physics.world.setBounds(0, 0, mapWidth, mapHeight)
         this.cameras.main.setBounds(0, 0, mapWidth, mapHeight)
 
-        // Spawn player near bottom-left of the map
-        const spawnX = 80
-        const spawnY = mapHeight - 60
+        // Parallax
+        this.bgFar.setScrollFactor(0.1, 1)
+        this.bgFront.setScrollFactor(0.6, 1)
 
+        // Temp player texture
         let tempPlayer = this.add.graphics()
             .fillStyle(0xffffff, 1)
             .fillRect(0, 0, 16, 28)
@@ -39,17 +105,17 @@ class Play extends Phaser.Scene {
 
         tempPlayer.setAlpha(0)
 
-        this.player = new Player(this, spawnX, spawnY, 'playerRect')
+        // Player spawn
+        const spawnX = 80
+        this.player = new Player(this, spawnX, 0, 'playerRect')
         this.player.y = mapHeight - this.player.height / 2
         this.player.setCollideWorldBounds(true)
 
-        // Camera settings:
-        // Deadzone lets the player move on screen before camera starts shifting
-        this.cameras.main.setDeadzone(0, 0)
+        // Camera
+        this.cameras.main.setDeadzone(120, 540)
         this.cameras.main.startFollow(this.player, true, 0.08, 0.08)
-        this.cameras.main.setFollowOffset(-this.scale.width * 0.25, 0)
-        this.cameras.main.setZoom(1.2)
-        this.cameras.main.followOffset.set(-20, -100)
+        this.cameras.main.setZoom(1.7)
+        this.cameras.main.followOffset.set(-180, -140)
 
         this.keys = this.input.keyboard.addKeys({
             AKey: Phaser.Input.Keyboard.KeyCodes.A,
@@ -60,5 +126,9 @@ class Play extends Phaser.Scene {
 
     update() {
         this.playerFSM.step()
+
+        for (const interactable of this.interactables) {
+            interactable.update(this.player)
+        }
     }
 }
