@@ -20,7 +20,7 @@ let config = {
         }
     },
 
-    scene: [ Play ]
+    scene: [ Load, Menu, Play ]
 }
 
 const game = new Phaser.Game(config)
