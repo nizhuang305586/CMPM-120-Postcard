@@ -6,38 +6,17 @@ class Play extends Phaser.Scene {
     create() {
         const { width, height } = this.scale
 
-        this.anims.create({
-            key: 'catIdle',
-            frames: this.anims.generateFrameNumbers('cat', { start: 0, end: 4 }),
-            frameRate: 12,
-            repeat: -1
+        this.ringSFX = this.sound.add('ringing', {
+            loop: true
         })
 
-        this.anims.create({
-            key: 'micaIdle',
-            frames: this.anims.generateFrameNumbers('mica', { start: 0, end: 0 }),
-            frameRate: 0,
-            repeat: -1
-        })
+        this.meowSFX = this.sound.add('meow')
 
-
-        this.anims.create({
-            key: 'micaWalk',
-            frames: this.anims.generateFrameNumbers('mica', { start: 0, end: 4 }),
-            frameRate: 12,
-            repeat: -1
-        })
-
-        this.anims.create({
-            key: 'npcIdle',
-            frames: this.anims.generateFrameNumbers('npc', { start: 0, end: 4 }),
-            frameRate: 12,
-            repeat: -1
-        })
-
-
-
-        this.interactables = []
+        this.ringSFX.play()
+        
+        this.interactables = [] //holds all interactable objects in a scene
+        this.currentInteractable = null
+        this.phoneBoothUsed = false
 
         // smaller box pushed higher
         this.dialogueBox = this.add.rectangle(480, 340, 360, 52, 0x000000, 0.85)
@@ -64,6 +43,7 @@ class Play extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(101)
 
+        //converted to new dialogue behavior
         this.openDialogue = (message, response) => {
             this.dialogueBox.setVisible(true)
             this.dialogueText.setText(message).setVisible(true)
@@ -80,6 +60,19 @@ class Play extends Phaser.Scene {
             })
         }
 
+        // optional helper for multi-step interactables
+        this.closeDialogue = () => {
+            this.dialogueBox.setVisible(false)
+            this.dialogueText.setVisible(false)
+            this.responseText.setVisible(false)
+            this.currentInteractable = null
+        }
+
+        this.phoneboothSprite = this.add.image(330, 650, 'booth')
+            .setOrigin(0.5, 1)
+            .setDepth(5)
+            .setScale(0.1)
+
         const phoneBooth = new Interact(this, 330, 620, {
             width: 25,
             height: 50,
@@ -95,11 +88,16 @@ class Play extends Phaser.Scene {
                     'Hello? When are you coming back home?',
                     "I'm currently on my way."
                 )
+
                 this.phoneBoothUsed = true
             }
         })
 
-        phoneBooth.used = false
+
+
+        if (phoneBooth.displayObject)
+            phoneBooth.displayObject.setVisible(false)
+
 
         this.catSprite = this.add.sprite(470, 640, 'cat')
             .setOrigin(0.5, 1)
@@ -113,15 +111,17 @@ class Play extends Phaser.Scene {
             color: 0xFFFFFF,
             radius: 60,
             onInteract: () => {
+                this.meowSFX.play()
                 this.openDialogue(
                     "Meow...",
-                    "So cute :D"
+                    "Cute kitty, wish I could adopt it"
                 )
             }
         })
 
-        if (cat.displayObject)
+        if (cat.displayObject) {
             cat.displayObject.setVisible(false)
+        }
 
         this.npcSprite = this.add.sprite(780, 640, 'npc')
             .setOrigin(0.5, 1)
@@ -136,14 +136,15 @@ class Play extends Phaser.Scene {
             radius: 60,
             onInteract: () => {
                 this.openDialogue(
-                    'Beautiful Night is it not?',
-                    'I believe so, the stars are nice to look at'
+                    'Cant wait to go home that final was buns',
+                    '...'
                 )
             }
         })
 
-        if (NPC.displayObject)
+        if (NPC.displayObject) {
             NPC.displayObject.setVisible(false)
+        }
 
         this.interactables.push(phoneBooth)
         this.interactables.push(cat)
@@ -173,7 +174,6 @@ class Play extends Phaser.Scene {
         const mapWidth = this.bgFront.displayWidth
         const mapHeight = this.bgFront.displayHeight
 
-
         this.busStopSprite = this.add.image(mapWidth - 100, mapHeight + 25, 'busStop')
             .setOrigin(0.5, 1)
             .setDepth(-5)
@@ -181,7 +181,7 @@ class Play extends Phaser.Scene {
 
         const busStop = new Interact(this, 840, 615, {
             width: this.busStopSprite.displayWidth,
-            height: this.busStopSprite.desplayHeight,
+            height: this.busStopSprite.displayHeight,
             color: 0x00ff00,
             radius: 70,
             onInteract: () => {
@@ -201,14 +201,6 @@ class Play extends Phaser.Scene {
         // Parallax
         this.bgFar.setScrollFactor(0.1, 1)
         this.bgFront.setScrollFactor(0.6, 1)
-
-        // Temp player texture
-        let tempPlayer = this.add.graphics()
-            .fillStyle(0xffffff, 1)
-            .fillRect(0, 0, 16, 28)
-            .generateTexture('playerRect', 16, 28)
-
-        tempPlayer.setAlpha(0)
 
         // Player spawn
         const spawnX = 80
@@ -232,7 +224,26 @@ class Play extends Phaser.Scene {
     update() {
         this.playerFSM.step()
 
-        for (const interactable of this.interactables)
+        for (const interactable of this.interactables) {
             interactable.update(this.player)
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.keys.EKey)) {
+            // if a special multi-step interactable is active, continue it
+            if (this.dialogueBox.visible && this.currentInteractable) {
+                this.currentInteractable.tryInteract(this.player)
+                return
+            }
+
+            // otherwise start a nearby interaction
+            for (const interactable of this.interactables) {
+                if (interactable.tryInteract(this.player)) {
+                    break
+                }
+            }
+        }
+
+        if (this.phoneBoothUsed)
+            this.ringSFX.stop()
     }
 }

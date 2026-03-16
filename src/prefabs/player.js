@@ -6,6 +6,10 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 
         this.moveSpeed = 65
 
+        this.footstepSFX = scene.sound.add('footsteps', {
+            loop: true
+        })
+
         scene.playerFSM = new StateMachine('idle', {
             idle: new IdleState(),
             walk: new WalkState(),
@@ -46,6 +50,7 @@ class IdleState extends State {
 class WalkState extends State {
     enter (scene, player) {
         player.anims.play('micaWalk', true)
+        player.footstepSFX.play()
     }
     execute(scene, player) {
         const LeftKey = scene.keys.AKey
@@ -62,11 +67,13 @@ class WalkState extends State {
 
         if (Phaser.Input.Keyboard.JustDown(InteractKey)) {
             this.stateMachine.transition('interact')
+            player.footstepSFX.stop()
             return
         }
 
         if (!LeftKey.isDown && !RightKey.isDown) {
             this.stateMachine.transition('idle')
+            player.footstepSFX.stop()
             player.anims.stop()
             return
         }

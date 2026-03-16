@@ -3,57 +3,97 @@ class Menu extends Phaser.Scene {
         super('Menu')
     }
 
-
-
     create() {
-        const { width, height } = this.scale
         const W = 960
         const H = 540
 
-        // Background behind the envelope
         this.cameras.main.setBackgroundColor(0xd8c7a0)
 
-        // Main container so the whole menu can move together if needed later
         this.menuContainer = this.add.container(0, 0)
 
-        // ---------- Letter / postcard ----------
+        // ---------- Postcard ----------
         const card = this.add.rectangle(W / 2, H / 2 + 70, 720, 360, 0xf8f3e7)
             .setStrokeStyle(3, 0xc9b89a)
 
-        const title = this.add.text(W / 2, H / 2 - 10, 'Postcard for [Name]', {
+        const title = this.add.text(W / 2, H / 2 - 30, 'Postcard for Mica', {
             fontFamily: 'Georgia, Times, serif',
-            fontSize: '42px',
+            fontSize: '40px',
             color: '#3b2f2f',
             fontStyle: 'bold'
         }).setOrigin(0.5)
 
-        title.setDepth(100000)
-
-        const subtitle = this.add.text(W / 2, H / 2 + 45, 'Click to open', {
+        const subtitle = this.add.text(W / 2, H / 2 + 20, 'Choose an option', {
             fontFamily: 'Georgia, Times, serif',
             fontSize: '20px',
             color: '#5a4a3a'
         }).setOrigin(0.5)
 
-        const startText = this.add.text(W / 2, H / 2 + 115, 'Begin', {
+        const startText = this.add.text(W / 2, H / 2 + 95, 'Start', {
             fontFamily: 'Georgia, Times, serif',
-            fontSize: '28px',
+            fontSize: '26px',
             color: '#2f241c',
             backgroundColor: '#eadfc8',
             padding: { left: 18, right: 18, top: 8, bottom: 8 }
         }).setOrigin(0.5)
 
+        const creditsText = this.add.text(W / 2, H / 2 + 150, 'Credits', {
+            fontFamily: 'Georgia, Times, serif',
+            fontSize: '24px',
+            color: '#2f241c',
+            backgroundColor: '#eadfc8',
+            padding: { left: 16, right: 16, top: 7, bottom: 7 }
+        }).setOrigin(0.5)
+
         startText.setInteractive({ useHandCursor: true })
+        creditsText.setInteractive({ useHandCursor: true })
 
         this.cardContainer = this.add.container(0, 0, [
             card,
             title,
             subtitle,
-            startText
+            startText,
+            creditsText
         ])
 
-        // Start with postcard mostly hidden inside envelope
+        // postcard starts tucked into envelope
         this.cardContainer.y = 95
+
+        // ---------- Credits paper ----------
+        const creditsPaper = this.add.rectangle(W / 2, H / 2 + 70, 660, 330, 0xffffff)
+            .setStrokeStyle(2, 0xd0d0d0)
+
+        const creditsTitle = this.add.text(W / 2, H / 2 - 75, 'Credits', {
+            fontFamily: 'Georgia, Times, serif',
+            fontSize: '34px',
+            color: '#2a2a2a',
+            fontStyle: 'bold'
+        }).setOrigin(0.5)
+
+        const creditsBody = this.add.text(W / 2, H / 2 + 60,
+            'Game Design / Programming\n' +
+            'Nikolas Huang\n' +
+            'Art\n' +
+            'Mica\n' +
+            'Music\n' +
+            'Royalty Free and Pixabay\n' +
+            'Click anywhere to return',
+        {
+            fontFamily: 'Georgia, Times, serif',
+            fontSize: '22px',
+            color: '#333333',
+            align: 'center',
+            lineSpacing: 8
+        }).setOrigin(0.5)
+
+        this.creditsContainer = this.add.container(0, 0, [
+            creditsPaper,
+            creditsTitle,
+            creditsBody
+        ])
+
+        this.creditsContainer.y = 95
+        this.creditsContainer.setVisible(false)
+        this.creditsContainer.setAlpha(0)
 
         // ---------- Envelope back ----------
         const back = this.add.graphics()
@@ -91,7 +131,6 @@ class Menu extends Phaser.Scene {
         bottomFold.fillPath()
 
         // ---------- Top flap ----------
-        // Make this its own container so we can animate it upward
         const flapGraphics = this.add.graphics()
         flapGraphics.fillStyle(0xdec9a5, 1)
         flapGraphics.beginPath()
@@ -110,41 +149,44 @@ class Menu extends Phaser.Scene {
 
         this.flapContainer = this.add.container(0, 0, [flapGraphics])
 
-        // Put everything on screen
         this.menuContainer.add([
-            this.cardContainer,
             back,
             leftFold,
             rightFold,
             bottomFold,
+            this.cardContainer,
+            this.creditsContainer,
             this.flapContainer
         ])
 
-        // State flag so it doesn't spam
         this.isOpening = false
         this.hasOpened = false
+        this.showingCredits = false
 
-        // Hover effect for the button
-        startText.on('pointerover', () => {
-            if (!this.isOpening && !this.hasOpened) {
-                startText.setScale(1.05)
-            }
-        })
+        const addHoverEffect = (btn) => {
+            btn.on('pointerover', () => {
+                if (!this.isOpening && !this.hasOpened) {
+                    btn.setScale(1.05)
+                }
+            })
 
-        startText.on('pointerout', () => {
-            if (!this.isOpening && !this.hasOpened) {
-                startText.setScale(1)
-            }
-        })
+            btn.on('pointerout', () => {
+                if (!this.isOpening && !this.hasOpened) {
+                    btn.setScale(1)
+                }
+            })
+        }
 
-        // Click opens the envelope animation
+        addHoverEffect(startText)
+        addHoverEffect(creditsText)
+
         startText.on('pointerdown', () => {
             if (this.isOpening || this.hasOpened) return
 
             this.isOpening = true
             startText.disableInteractive()
+            creditsText.disableInteractive()
 
-            // little press feedback
             this.tweens.add({
                 targets: startText,
                 scaleX: 0.96,
@@ -152,12 +194,30 @@ class Menu extends Phaser.Scene {
                 duration: 70,
                 yoyo: true,
                 onComplete: () => {
-                    this.openEnvelope()
+                    this.openEnvelope('start')
                 }
             })
         })
 
-        // optional: subtle idle bob on the postcard before opening
+        creditsText.on('pointerdown', () => {
+            if (this.isOpening || this.hasOpened) return
+
+            this.isOpening = true
+            startText.disableInteractive()
+            creditsText.disableInteractive()
+
+            this.tweens.add({
+                targets: creditsText,
+                scaleX: 0.96,
+                scaleY: 0.96,
+                duration: 70,
+                yoyo: true,
+                onComplete: () => {
+                    this.openEnvelope('credits')
+                }
+            })
+        })
+
         this.tweens.add({
             targets: this.cardContainer,
             y: this.cardContainer.y - 6,
@@ -167,25 +227,25 @@ class Menu extends Phaser.Scene {
             repeat: -1
         })
 
-        // Fullscreen interactive zone
-        const clickZone = this.add.zone(480, 270, 960, 540)
-        clickZone.setInteractive({ useHandCursor: true })
+        this.clickZone = this.add.zone(480, 270, 960, 540)
+        this.clickZone.setDepth(9999999)
+        this.clickZone.disableInteractive()
+        this.clickZone.setVisible(false)
 
-        clickZone.on('pointerdown', () => {
-            if (!this.isOpening && !this.hasOpened) {
-                this.openEnvelope()
+        this.clickZone.on('pointerdown', () => {
+            if (this.showingCredits) {
+                this.scene.restart()
             }
         })
     }
 
-
-    openEnvelope() {
+    openEnvelope(mode = 'start') {
         this.hasOpened = true
 
-        // Stop all old tweens on card before doing the real animation
         this.tweens.killTweensOf(this.cardContainer)
+        this.tweens.killTweensOf(this.creditsContainer)
 
-        // 1. Open the top flap upward
+        // flap opens
         this.tweens.add({
             targets: this.flapContainer,
             y: -220,
@@ -194,31 +254,62 @@ class Menu extends Phaser.Scene {
             ease: 'Cubic.easeOut'
         })
 
-        // 2. Slide postcard upward out of the envelope
+        if (mode === 'start') {
+            // postcard comes out
+            this.tweens.add({
+                targets: this.cardContainer,
+                y: -40,
+                duration: 900,
+                delay: 120,
+                ease: 'Cubic.easeOut'
+            })
+
+            this.tweens.add({
+                targets: this.cardContainer,
+                scaleX: 1.03,
+                scaleY: 1.03,
+                duration: 900,
+                delay: 120,
+                ease: 'Sine.easeOut'
+            })
+
+            this.time.delayedCall(1400, () => {
+                this.cameras.main.fadeOut(500, 0, 0, 0)
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('Play')
+                })
+            })
+        }
+
+        if (mode === 'credits') {
+            this.cardContainer.setVisible(false)
+            this.showCreditsPaper()
+        }
+    }
+
+    showCreditsPaper() {
+        this.showingCredits = true
+        this.creditsContainer.setVisible(true)
+
+        this.clickZone.setVisible(true)
+        this.clickZone.setInteractive({ useHandCursor: true })
+
         this.tweens.add({
-            targets: this.cardContainer,
-            y: -40,
+            targets: this.creditsContainer,
+            y: -35,
+            alpha: 1,
             duration: 900,
             delay: 120,
             ease: 'Cubic.easeOut'
         })
 
-        // 3. Slight dramatic scale
         this.tweens.add({
-            targets: this.cardContainer,
-            scaleX: 1.03,
-            scaleY: 1.03,
+            targets: this.creditsContainer,
+            scaleX: 1.02,
+            scaleY: 1.02,
             duration: 900,
             delay: 120,
             ease: 'Sine.easeOut'
-        })
-
-        // 4. Fade into play scene after animation
-        this.time.delayedCall(1400, () => {
-            this.cameras.main.fadeOut(500, 0, 0, 0)
-            this.cameras.main.once('camerafadeoutcomplete', () => {
-                this.scene.start('Play')
-            })
         })
     }
 }

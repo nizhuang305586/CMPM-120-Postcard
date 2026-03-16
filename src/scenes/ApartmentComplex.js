@@ -6,6 +6,23 @@ class ApartmentC extends Phaser.Scene {
     create() {
         this.bgFront = this.add.image(0, 0, 'ApartmentComplex').setOrigin(0,0)
 
+        this.interactables = []
+
+        const apartmentDoor = new Interact(this, 735, 520, {
+            width: 16,
+            height: 32,
+            color: 0xFFFFFF,
+            radius: 40,
+            onInteract: () => {
+                this.scene.start('ApartmentR')
+            }
+        })
+
+        if (apartmentDoor.displayObject)
+            apartmentDoor.displayObject.setVisible(false)
+
+        this.interactables.push(apartmentDoor)
+
         const mapWidth = this.bgFront.displayWidth
         const mapHeight = this.bgFront.displayHeight
 
@@ -28,5 +45,8 @@ class ApartmentC extends Phaser.Scene {
 
     update() {
         this.playerFSM.step()
+
+        for (const interactables of this.interactables)
+            interactables.update(this.player)
     }
 }
