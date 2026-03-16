@@ -1,3 +1,14 @@
+/*
+ * Nikolas Huang, CMPM 120, Mar 16
+ * 
+ * Post card for Mica
+ * 
+ * Hours worked prediction: 20
+ * 
+ * all code was built by reading many phaser documentation code and sourcing stackoverflow
+ */
+
+
 'use strict'
 
 let config = {
