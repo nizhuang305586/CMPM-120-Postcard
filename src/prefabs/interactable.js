@@ -41,6 +41,11 @@ class Interact {
     }
 
     update(player) {
+
+        if (this.used) {
+            this.prompt.setVisible(false)
+            return
+        }
         
         if (this.scene.dialogueBox.visible) {
             this.prompt.setVisible(false)

@@ -20,7 +20,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
 class IdleState extends State {
     enter(scene, player) {
         player.setVelocity(0,0)
-        console.log('IdleState')
+        player.anims.play('micaIdle', true)
 
     }
 
@@ -44,6 +44,9 @@ class IdleState extends State {
 }
 
 class WalkState extends State {
+    enter (scene, player) {
+        player.anims.play('micaWalk', true)
+    }
     execute(scene, player) {
         const LeftKey = scene.keys.AKey
         const RightKey = scene.keys.DKey
@@ -51,10 +54,10 @@ class WalkState extends State {
 
         if (LeftKey.isDown) {
             player.setVelocityX(-player.moveSpeed)
-            console.log('isDown')
+            player.setFlipX(true)
         } else if (RightKey.isDown) {
             player.setVelocityX(player.moveSpeed)
-            console.log('isDown')
+            player.setFlipX(false)
         }
 
         if (Phaser.Input.Keyboard.JustDown(InteractKey)) {
@@ -64,6 +67,7 @@ class WalkState extends State {
 
         if (!LeftKey.isDown && !RightKey.isDown) {
             this.stateMachine.transition('idle')
+            player.anims.stop()
             return
         }
     }
